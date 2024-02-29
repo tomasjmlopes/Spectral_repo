@@ -19,3 +19,5 @@ To update the repo locally
 
 1. Head to repo folder
 2. git pull
+
+Commit attempt laptop
