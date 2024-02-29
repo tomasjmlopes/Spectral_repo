@@ -1,0 +1,28 @@
+import numpy as np
+import spectral
+import matplotlib as mp
+
+# Spectral uses 'alltrue' somewhere in the principal components class, which is deprecated in Numpy
+# TODO: maybe submit a fix? 
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+# Clear variables and close plots
+%reset -f
+mp.pyplot.close('all')
+
+specim_data_img = spectral.open_image("~/specim_fx10e_captures/Data Capture Day/4/Specim/conversion_output/post_processing/data4_dark_current_compensation_radiometric_correction.hdr")
+
+# Create flipped Specim image
+img = spectral.envi.create_image("flipped_img.hdr", specim_data_img .metadata)
+img_mm = img.open_memmap(writable=True)
+np.copyto(img_mm, np.flip(specim_data_img .open_memmap(writable=False), axis=1))
+spectral.imshow(img, source=img)
+spectral.imshow(specim_data_img , source=specim_data_img )
+
+
+
+
+
+
+
