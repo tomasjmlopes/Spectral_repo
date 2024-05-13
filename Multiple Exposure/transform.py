@@ -12,7 +12,10 @@ class align:
             vmax_r = 1,
             vmin_r = 0,
             vmax_l = 1,
-            vmin_l = 0
+            vmin_l = 0,
+            pixel_tol = 2,
+            sig = 0.1,
+            weigths = False
     ):
         """
         Variable Initialization. Takes as input two 2D datasets (or RGB images)
@@ -30,6 +33,9 @@ class align:
         self.V = None
         self.U = None
         self.T = None
+        self.weigths = weigths
+        self.sig = sig
+        self.pixel_tol = pixel_tol
         self.centroid = None
         self.point_cloud_image = []
         self.point_cloud_image_to_tranform = []
@@ -81,10 +87,17 @@ class align:
             #Transform the data
             self.transform(self.image_to_tranform)
             t_p = np.array([self.T + b @ self.U @ np.diag(self.S) @ self.V for b in (left_plot - self.centroid)])
-            self.ax[2].imshow(self.new_data, interpolation = 'gaussian', origin = 'lower')
+            self.ax[2].imshow(self.new_data, interpolation = 'None', origin = 'lower')
             self.ax[1].plot(t_p[:, 0], t_p[:, 1], color = 'k', marker = 'o')
 
-
+    def make_gauss_weights(self, arr_shape, sigma):
+        """
+        Gaussian Weights for interpolation
+        """
+        XX, YY = np.meshgrid(np.arange(arr_shape[0]), np.arange(arr_shape[1]))
+        XX_center, YY_center = (arr_shape[0] - 1)/2, (arr_shape[1] - 1)/2
+        gw = np.exp(- ( (XX - XX_center)**2 + (YY - YY_center)**2 ) / (2 * sigma**2)) 
+        return gw
 
     def transform(self, data):
         """
@@ -105,17 +118,43 @@ class align:
         else:
             self.new_data = np.zeros((self.x_size, self.y_size, data.shape[2]))
 
+        gauss_ws = self.make_gauss_weights((int(self.pixel_tol*2), int(self.pixel_tol*2)), sigma = self.sig)
+        nearest_ws = np.ones((int(self.pixel_tol*2), int(self.pixel_tol*2)))
         for i in range(0, self.y_size):
             for j in range(0, self.x_size):
                 vec = self.T + np.array([i, j] - self.centroid) @ self.U @ np.diag(self.S) @ self.V
                 new_i, new_j = int(vec[0]), int(vec[1])
-                try:
-                    if len(data.shape) == 2:
-                        self.new_data[j, i] = data[new_j, new_i]
-                    else:
-                        self.new_data[j, i, :] = data[new_j, new_i]
-                except:
-                    pass
+                
+                if self.weigths == 'gaussian':
+                    try:
+                        if len(data.shape) == 2:
+                            patch = data[new_j-self.pixel_tol : new_j+self.pixel_tol, new_i-self.pixel_tol : new_i+self.pixel_tol]
+                            self.new_data[j, i] = np.average(patch, weights = gauss_ws, axis = (0, 1))
+                        else:
+                            patch = data[new_j-self.pixel_tol : new_j+self.pixel_tol, new_i-self.pixel_tol : new_i+self.pixel_tol, :]
+                            self.new_data[j, i, :] = np.average(patch, weights = gauss_ws, axis = (0, 1))
+                    except:
+                        pass
+
+                elif self.weigths == 'nearest':
+                    try:
+                        if len(data.shape) == 2:
+                            patch = data[new_j-self.pixel_tol : new_j+self.pixel_tol, new_i-self.pixel_tol : new_i+self.pixel_tol]
+                            self.new_data[j, i] = np.average(patch, axis = (0, 1), weights = nearest_ws)
+                        else:
+                            patch = data[new_j-self.pixel_tol : new_j+self.pixel_tol, new_i-self.pixel_tol : new_i+self.pixel_tol, :]
+                            self.new_data[j, i, :] = np.average(patch, axis = (0, 1), weights = nearest_ws)
+                    except:
+                        pass
+
+                else:
+                    try:
+                        if len(data.shape) == 2:
+                            self.new_data[j, i] = data[new_j, new_i]
+                        else:
+                            self.new_data[j, i, :] = data[new_j, new_i]
+                    except:
+                        pass
             
     def _svd_params(self, A, B):
         """
