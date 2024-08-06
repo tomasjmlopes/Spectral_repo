@@ -48,6 +48,9 @@ class LIBS_Toolkit:
         self.positions = None
         self.x_size = None
         self.y_size = None
+        self.fft_metric = None
+        self.ft_features = None
+        self.int_features = None
         self.spectral_size = None
         self.features = None
         self.x_features = None
@@ -304,8 +307,7 @@ class LIBS_Toolkit:
         ax.spines[['right', 'top']].set_visible(False)
         ax.set_ylim(0, 1)
 
-    def fft_features(self, n_features: int = 20, smallest_dim_pixels: int = 5, 
-                                     prominence: Union[float, str] = 'auto', sigma: Optional[float] = None) -> Tuple[np.ndarray, np.ndarray]:
+    def _fft_features(self, smallest_dim_pixels: int = 5) -> Tuple[np.ndarray, np.ndarray]:
         """
         Automatically extract N features from dataset using the FT Feature Finder.
 
@@ -337,14 +339,19 @@ class LIBS_Toolkit:
         sums = np.divide(sum1, max1, out=np.zeros(sum1.shape, dtype=float))
         sums = np.nan_to_num((sums - np.nanmin(sums))/(np.nanmax(sums) - np.nanmin(sums)), nan=0.0)
 
-        if prominence == 'auto':
-            prominence = np.mean(sums) + np.std(sums)
+        self.fft_metric = sums
 
-        inds, _ = find_peaks(sums, distance=5, prominence=prominence)
+    def extract_fft_features(self, n_features: int = 20, prominence: Union[float, str] = 'auto', pixel_dist = 5):
+        if self.fft_metric is None:
+            self.fft_metric = self._fft_features(smallest_dim_pixels = pixel_dist)
+        if prominence == 'auto':
+            prominence = np.mean(self.fft_metric) + np.std(self.fft_metric)
+
+        inds, _ = find_peaks(self.fft_metric, distance=3, prominence=prominence)
 
         fft_wavelengths = self.wavelengths[inds]
-        fft_wavelengths = fft_wavelengths[np.argsort(sums[inds])[::-1][:n_features]]
-        return fft_wavelengths
+        fft_wavelengths = fft_wavelengths[np.argsort(self.fft_metric[inds])[::-1][:n_features]]
+        self.ft_features = fft_wavelengths
 
     def intensity_features(self, n_features: int = 20, prominence: Union[float, str] = 'auto'):
         mean_spec = self.calculate_average_spectrum()
@@ -355,20 +362,21 @@ class LIBS_Toolkit:
         mean_intensities = mean_spec[inds]
         mean_features = self.wavelengths[inds]
         mean_features = mean_features[np.argsort(mean_intensities)[::-1][:n_features]]
-        return mean_features
+        self.int_features = mean_features
 
     def automatic_feature_extraction(self, fft_features: int = 20, fft_prominence: float = 'auto', min_pixel_dist: float = 5, 
-                                           int_features: int = 20, int_prominence: float = 'auto', sigma: float = 0.5, perform_fft = True):
+                                           intens_features: int = 20, int_prominence: float = 'auto', sigma: float = 0.5):
 
-        if perform_fft:
-            fft_features = self.fft_features(n_features = fft_features, smallest_dim_pixels = min_pixel_dist, prominence = fft_prominence)
-        else:
-            fft_features = np.array([])
-        intensity_features = self.intensity_features(n_features = int_features, prominence = int_prominence)
+        if fft_features != 0:
+            self.extract_fft_features(n_features = fft_features, prominence = fft_prominence, pixel_dist = min_pixel_dist)
+
+        if (intens_features != 0) & (self.int_features is None):
+            self.intensity_features(n_features = intens_features, prominence = int_prominence)
 
         tolerance = 0.25
-        result_array = fft_features.copy()
-        for value in intensity_features:
+        result_array = self.ft_features.copy() if not(self.fft_metric is None) else np.array([])
+        to_check = self.int_features.copy() if not(self.int_features is None) else np.array([])
+        for value in to_check:
             if np.all(np.abs(result_array - value) > tolerance):
                 result_array = np.append(result_array, value)
 

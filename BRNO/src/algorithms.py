@@ -28,7 +28,8 @@ class GPUKMeans:
         distance_functions = {
             'euclidean': self._euclidean_distance,
             'hamming': self._hamming_distance,
-            'correlation': self._correlation_distance
+            'correlation': self._correlation_distance,
+            'cosine': self._cosine_distance
         }
         self._distance_func = distance_functions.get(self.distance)
         if self._distance_func is None:
@@ -39,6 +40,12 @@ class GPUKMeans:
 
     def _hamming_distance(self, X, Y):
         return cp.mean(X[:, cp.newaxis] != Y, axis=2)
+    
+    def _cosine_distance(self, X, Y):
+        X_norm = cp.linalg.norm(X, axis=1, keepdims=True)
+        Y_norm = cp.linalg.norm(Y, axis=1, keepdims=True)
+        cosine_sim = cp.dot(X, Y.T) / (X_norm * Y_norm.T)
+        return 1 - cosine_sim
 
     def _correlation_distance(self, X, Y):
         X_centered = X - cp.mean(X, axis=1, keepdims=True)
@@ -71,6 +78,8 @@ class GPUKMeans:
         return cp.sum(distances[cp.arange(len(X)), labels] ** 2)
 
     def fit(self, X):
+        if self.random_state is not None:
+            cp.random.seed(self.random_state)
         X = cp.asarray(X, dtype=cp.float32)
         best_inertia = float('inf')
         best_labels = None
@@ -131,23 +140,6 @@ class GPUKMeans:
 
     def get_cluster_centers(self):
         return cp.asnumpy(self.cluster_centers_)
-
-# Example usage
-if __name__ == "__main__":
-    from sklearn.datasets import make_blobs
-
-    # Generate sample data
-    X, _ = make_blobs(n_samples=1000, centers=5, cluster_std=1.0, random_state=42)
-
-    # Initialize and fit KMeans
-    kmeans = GPUKMeans(n_clusters=5, distance='euclidean')
-    kmeans.fit(X)
-
-    # Output results
-    print(f'Inertia: {kmeans.inertia_}')
-    print(f'Centroids:\n{kmeans.get_cluster_centers()}')
-    print(f'Labels:\n{kmeans.get_labels()}')
-
 
 # import cupy as cp
 # from tqdm import tqdm
