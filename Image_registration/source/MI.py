@@ -17,7 +17,7 @@ class MI(nn.Module):
 
     """
     def __init__(self, dimension, num_bins=64, sample_rate=1, kernel_sigma=1, eps=1e-8, **kwargs):
-        super(MI, self).__init__()
+        super().__init__()
         self.dimension = dimension
         self.num_bins = num_bins
         self.sample_rate = sample_rate
@@ -63,13 +63,26 @@ class MI(nn.Module):
         masked_target = [torch.masked_select(target[i], mask=image_mask[i]) for i in range(B)]
 
         sample_mask = torch.rand_like(masked_source[0]).le(self.sample_rate)
+
+###############################################################################################################################################
+
+        # sampled_source = [torch.masked_select(masked_source[i], mask=sample_mask) for i in range(B)]
+        # sampled_target = [torch.masked_select(masked_target[i], mask=sample_mask) for i in range(B)]
+
+        # source_max_v = torch.stack([s.amax().detach() for s in sampled_source])
+        # source_min_v = torch.stack([s.amin().detach() for s in sampled_source])
+        # target_max_v = torch.stack([t.amax().detach() for t in sampled_target])
+        # target_min_v = torch.stack([t.amin().detach() for t in sampled_target])
+
         sampled_source = [torch.masked_select(masked_source[i], mask=sample_mask) for i in range(B)]
         sampled_target = [torch.masked_select(masked_target[i], mask=sample_mask) for i in range(B)]
+        source_max_v = torch.stack([s.amax().detach() if s.numel() > 0 else torch.tensor(0.0).to(s.device) for s in sampled_source])
+        source_min_v = torch.stack([s.amin().detach() if s.numel() > 0 else torch.tensor(0.0).to(s.device) for s in sampled_source])
+        target_max_v = torch.stack([t.amax().detach() if t.numel() > 0 else torch.tensor(0.0).to(t.device) for t in sampled_target])
+        target_min_v = torch.stack([t.amin().detach() if t.numel() > 0 else torch.tensor(0.0).to(t.device) for t in sampled_target])
 
-        source_max_v = torch.stack([s.amax().detach() for s in sampled_source])
-        source_min_v = torch.stack([s.amin().detach() for s in sampled_source])
-        target_max_v = torch.stack([t.amax().detach() for t in sampled_target])
-        target_min_v = torch.stack([t.amin().detach() for t in sampled_target])
+###############################################################################################################################################
+
         source_bin_width = (source_max_v - source_min_v) / num_bins
         source_pad_min_v = source_min_v - source_bin_width * self._kernel_radius
         target_bin_width = (target_max_v - target_min_v) / num_bins

@@ -104,6 +104,7 @@ def calculate_weights(hdr_dataset, sigma=0.2, ideal_val=0.5, beta=0, weight_exp 
         # Ideal value for vision is 0.5. However, by introducing the beta
         # parameter, we can balance this ideal value with the average intensity
         # values of the image.
+        # https://www.frontiersin.org/journals/neurorobotics/articles/10.3389/fnbot.2022.846580/full
         avg_int = np.mean(data, axis = 0)
         mu = (1 - beta) * ideal_val + beta * avg_int
 
