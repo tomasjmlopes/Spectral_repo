@@ -16,9 +16,18 @@ class AffineTransform(nn.Module):
         self.transY = nn.Parameter(torch.tensor(translation_y_pred, dtype=torch.float, device=device))
         self.angle = nn.Parameter(torch.tensor(angle_pred, dtype=torch.float, device=device))
         self.device = device
+        self.task = 'bilinear'
 
-        self.scale_x_bounds = (scale_x_pred - s_tol, scale_x_pred + s_tol)
-        self.scale_y_bounds = (scale_y_pred - s_tol, scale_y_pred + s_tol)
+        if scale_x_pred - s_tol < 0.1:
+            self.scale_x_bounds = (0.1, scale_x_pred + s_tol)
+        else:
+            self.scale_x_bounds = (scale_x_pred - s_tol, scale_x_pred + s_tol)
+
+        if scale_y_pred - s_tol < 0.1:
+            self.scale_y_bounds = (0.1, scale_y_pred + s_tol)
+        else:
+            self.scale_y_bounds = (scale_y_pred - s_tol, scale_y_pred + s_tol)
+
         self.translation_x_bounds = (translation_x_pred - t_tol, translation_x_pred + t_tol)
         self.translation_y_bounds = (translation_y_pred - t_tol, translation_y_pred + t_tol)
         self.angle_bounds = (angle_pred - a_tol, angle_pred + a_tol)
@@ -49,8 +58,8 @@ class AffineTransform(nn.Module):
         ])
 
         M = torch.matmul(torch.matmul(T, R), S)
-        M_inv = torch.inverse(M)
-        return M_inv[:2, :].unsqueeze(0)
+        #M_inv = torch.inverse(M)
+        return M[:2, :].unsqueeze(0)
 
     def forward(self, x, y_size):
         self.scalex.data = torch.clamp(self.scalex.data, self.scale_x_bounds[0], self.scale_x_bounds[1])
@@ -60,5 +69,5 @@ class AffineTransform(nn.Module):
         self.angle.data = torch.clamp(self.angle.data, self.angle_bounds[0], self.angle_bounds[1])
 
         theta = self.get_theta()
-        grid = F.affine_grid(theta, y_size, align_corners=False)
-        return F.grid_sample(x, grid, align_corners=False)
+        grid = F.affine_grid(theta, y_size, align_corners = False)
+        return F.grid_sample(x, grid, align_corners = False, mode = self.task)
