@@ -43,8 +43,8 @@ def visualize_affine_transform_with_sliders(mod1, mod2):
     ax_translation_y = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor='lightgoldenrodyellow')
     ax_angle = plt.axes([0.25, 0.05, 0.65, 0.03], facecolor='lightgoldenrodyellow')
 
-    slider_scale_x = Slider(ax_scale_x, 'Scale X', 0.2, 10, valinit=init_scale_x)
-    slider_scale_y = Slider(ax_scale_y, 'Scale Y', 0.2, 10, valinit=init_scale_y)
+    slider_scale_x = Slider(ax_scale_x, 'Scale X', 0.05, 5, valinit=init_scale_x)
+    slider_scale_y = Slider(ax_scale_y, 'Scale Y', 0.05, 5, valinit=init_scale_y)
     slider_translation_x = Slider(ax_translation_x, 'Trans X', -1, 1, valinit=init_translation_x)
     slider_translation_y = Slider(ax_translation_y, 'Trans Y', -1, 1, valinit=init_translation_y)
     slider_angle = Slider(ax_angle, 'Angle', -np.pi, np.pi, valinit=init_angle)

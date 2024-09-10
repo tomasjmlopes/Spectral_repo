@@ -1,9 +1,10 @@
+from typing import Callable, Optional
+from collections import defaultdict
 import torch
 from .affine_transform import AffineTransform
 from .mi import MI
 import numpy as np
-from typing import Callable, Optional
-from collections import defaultdict
+
 
 class Lookahead:
     def __init__(self, optimizer, k: int = 5, alpha: float = 0.5):
