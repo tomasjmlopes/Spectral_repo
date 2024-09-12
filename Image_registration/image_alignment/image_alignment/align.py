@@ -71,7 +71,7 @@ class ImageAligner:
                                            translation_x_pred = self.final_params['translate'][0],
                                            translation_y_pred = self.final_params['translate'][1],
                                            angle_pred = self.final_params['rot_angle'])
-        affine_transform.task = 'nearest'
+        affine_transform.task = 'bilinear'
         for i in range(n_images):
             print(f'Progress: {i+1}/{n_images}', end = '\r')
             image = torch.tensor(dataset[:, :, i]).float().unsqueeze(0).unsqueeze(0)
