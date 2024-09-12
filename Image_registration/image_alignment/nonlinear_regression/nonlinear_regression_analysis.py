@@ -1,19 +1,16 @@
-import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-from matplotlib.colors import LogNorm
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.svm import SVR
 from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import MaxAbsScaler, MinMaxScaler
 
-class no_scale:
+class NoScale:
     def __init__(self):
         pass
 
@@ -23,12 +20,12 @@ class no_scale:
         return x
 
 class NonlinearRegressionAnalysis:
-    def __init__(self, X, y, patch_shape, test_size=0.2, random_state=42, scaler = None):
+    def __init__(self, X, y, patch_shape, test_size=0.2, random_state=42, scaler=None):
         self.X = X
         self.y = y
         self.patch_shape = patch_shape
         if scaler == None:
-            self.scaler = no_scale()
+            self.scaler = NoScale()
         elif scaler == 'MinMax':
             self.scaler = MinMaxScaler()
         elif scaler == 'MaxAbs':
@@ -37,7 +34,7 @@ class NonlinearRegressionAnalysis:
             raise ValueError("Scaler type not available. Choose between MinMax, MaxAbs, or None for no scaler")
         X_scaled = self.scaler.fit_transform(X)
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            X_scaled, y, test_size=test_size, random_state=random_state, shuffle = True
+            X_scaled, y, test_size=test_size, random_state=random_state, shuffle=True
         )
         self.model = None
         self.y_train_pred = None
@@ -95,27 +92,6 @@ class NonlinearRegressionAnalysis:
         X_test_scaled = self.scaler.transform(X_test)
         self.custom_test_pred = self.model.predict(X_test_scaled)
 
-    def get_metrics(self, data='original'):
-        if data == 'original':
-            train_mse = mean_squared_error(self.y_train, self.y_train_pred)
-            test_mse = mean_squared_error(self.y_test, self.y_test_pred)
-            train_r2 = r2_score(self.y_train, self.y_train_pred)
-            test_r2 = r2_score(self.y_test, self.y_test_pred)
-        elif data == 'custom' and self.custom_test_data is not None:
-            _, y_test = self.custom_test_data
-            train_mse = train_r2 = None  # No train metrics for custom data
-            test_mse = mean_squared_error(y_test, self.custom_test_pred)
-            test_r2 = r2_score(y_test, self.custom_test_pred)
-        else:
-            raise ValueError("Invalid data type or custom test data not set")
-
-        return {
-            'train_mse': train_mse,
-            'test_mse': test_mse,
-            'train_r2': train_r2,
-            'test_r2': test_r2
-        }
-
     def plot_fill_between(self, ax, y_pred, mean_values, colors):
         x_vals = np.linspace(min(y_pred), max(y_pred), 100)
         for mean, color, alpha in zip(mean_values, colors, [0.3, 0.2, 0.2]):
@@ -124,10 +100,7 @@ class NonlinearRegressionAnalysis:
                             x_vals * (1 + mean / 100), 
                             color=color, alpha=alpha, label=f'{mean}% Mean Percentage Error')
 
-    def plot_histogram(self, ax=None, data='original'):
-        if ax is None:
-            fig, ax = plt.subplots()
-        
+    def plot_histogram(self, ax, data='original'):
         if data == 'original':
             train_percentage_error = ((self.y_train - self.y_train_pred) / self.y_train)*100
             test_percentage_error = ((self.y_test - self.y_test_pred) / self.y_test)*100
@@ -140,11 +113,13 @@ class NonlinearRegressionAnalysis:
         elif data == 'custom' and self.custom_test_data is not None:
             _, y_test = self.custom_test_data
             test_percentage_error = ((y_test - self.custom_test_pred) / y_test)*100
+            train_percentage_error = ((self.y_train - self.y_train_pred) / self.y_train)*100
 
             test_mape = (abs(y_test - self.custom_test_pred) / y_test).mean() * 100
-            test_mae = np.abs(self.y_test - self.y_test_pred).mean()
+            test_mae = np.abs(y_test - self.custom_test_pred).mean()
 
             ax.hist(test_percentage_error, bins=100, alpha=0.7, label="Test", range=(-400, 400), density=True)
+            ax.hist(train_percentage_error, bins=100, alpha=0.7, label="Train", range=(-400, 400), density=True)
         else:
             raise ValueError("Invalid data type or custom test data not set")
 
@@ -155,18 +130,12 @@ class NonlinearRegressionAnalysis:
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         
-        # Adding a textbox
-        textstr = "MAPE: {:.2f}%\nMAE: {:.2f}".format(test_mape, test_mae)
+        textstr = f"MAPE: {test_mape:.2f}%\nMAE: {test_mae:.2f}"
         ax.text(1, 0.4, textstr, transform=ax.transAxes, fontsize=10,
                 verticalalignment='top', horizontalalignment='right',
                 bbox=dict(boxstyle="round,pad=0.3", edgecolor='gray', facecolor='white'))
 
-        return ax
-
-    def plot_reference(self, ax=None, data='original'):
-        if ax is None:
-            fig, ax = plt.subplots()
-
+    def plot_reference(self, ax, data='original'):
         if data == 'original':
             y_reshaped = self.y.reshape(self.patch_shape)
             patch_shape = self.patch_shape
@@ -183,17 +152,13 @@ class NonlinearRegressionAnalysis:
         ax.set_title(f"ICP-MS", fontsize=16)
         ax.set_ylabel("Pixels", fontsize=14)
 
-        # Set more spaced ticks on both axes
         ax.set_xticks([0, patch_shape[0]])
         ax.set_yticks([0, patch_shape[1]])
         ax.tick_params(axis='both', labelsize=12)
         
-        return ax, im
+        return im
 
-    def plot_reconstruction(self, ax=None, data='original'):
-        if ax is None:
-            fig, ax = plt.subplots()
-
+    def plot_reconstruction(self, ax, data='original'):
         if data == 'original':
             reconstruction = self.reconstruction
             patch_shape = self.patch_shape
@@ -212,17 +177,13 @@ class NonlinearRegressionAnalysis:
         ax.set_title(f"LIBS Prediction", fontsize=16)
         ax.set_xlabel("Pixels", fontsize=14)
 
-        # Set more spaced ticks on both axes
         ax.set_xticks([0, patch_shape[0]])
-        ax.set_yticks([ ])
+        ax.set_yticks([])
         ax.tick_params(axis='both', labelsize=12)
 
-        return ax, im
+        return im
 
-    def plot_error_map(self, ax=None, data='original'):
-        if ax is None:
-            fig, ax = plt.subplots()
-
+    def plot_error_map(self, ax, data='original'):
         if data == 'original':
             reconstruction = self.reconstruction
             patch_shape = self.patch_shape
@@ -239,17 +200,13 @@ class NonlinearRegressionAnalysis:
         im = ax.imshow(abs_error.T, cmap='Reds', aspect='equal', origin='lower')
         ax.set_title(f"Error", fontsize=16)
 
-        # Set more spaced ticks on both axes
         ax.set_xticks([0, patch_shape[0]])
         ax.set_yticks([])
         ax.tick_params(axis='both', labelsize=12)
 
-        return ax, im
+        return im
 
-    def plot_actual_vs_predicted(self, data='train', ax=None):
-        if ax is None:
-            fig, ax = plt.subplots()
-        
+    def plot_actual_vs_predicted(self, ax, data='train'):
         mean_values = [25, 50, 75]
         colors = ['green', 'yellow', 'orange']
         
@@ -295,61 +252,14 @@ class NonlinearRegressionAnalysis:
         offsety.set_size(8)
         offsety.set_position((-0.3, 0.7))
         offsety.set_va('bottom')
-        
-        return ax
 
-    def plot_all(self, data='original'):
-        if self.model is None:
-            raise ValueError("Model has not been trained. Call train_model() first.")
-
-        if data == 'custom' and self.custom_test_data is None:
-            raise ValueError("Custom test data not set. Call set_custom_test_data() first.")
-
-        fig = plt.figure(figsize=(14, 4))
-        gs = fig.add_gridspec(2, 5, width_ratios=[1.8, 1.8, 2, 2, 2], height_ratios=[1, 1])
-
-        ax1 = fig.add_subplot(gs[0, 0:2])
-        self.plot_histogram(ax1, data=data)
-
-        ax2 = fig.add_subplot(gs[:, 2])
-        ax2, im1 = self.plot_reference(ax2, data=data)
-
-        ax3 = fig.add_subplot(gs[:, 3])
-        ax3, im2 = self.plot_reconstruction(ax3, data=data)
-
-        ax4 = fig.add_subplot(gs[:, 4])
-        ax4, im3 = self.plot_error_map(ax4, data=data)
-
-        if data == 'original':
-            ax5 = fig.add_subplot(gs[1, 0])
-            self.plot_actual_vs_predicted('train', ax5)
-
-            ax6 = fig.add_subplot(gs[1, 1])
-            self.plot_actual_vs_predicted('test', ax6)
-        else:
-            ax5 = fig.add_subplot(gs[1, 0:2])
-            self.plot_actual_vs_predicted('custom', ax5)
-
-        for ax, im in zip([ax2, ax3, ax4], [im1, im2, im3]):
-            divider = make_axes_locatable(ax)
-            cax = divider.append_axes("right", size = "5%", pad = 0.05)
-            cbar = plt.colorbar(im, cax=cax)
-            if ax == 'None':
-                continue
-            else:
-                cbar.ax.yaxis.offsetText.set(size = 10) 
-                cbar.ax.yaxis.offsetText.set_position((6, -5)) 
-                cbar.formatter.set_scientific(True)
-                cbar.formatter.set_powerlimits((0, 0))
-                cbar.update_ticks()
-
-        gs.tight_layout(fig, rect=[0, 0.0, 0.9, 1], h_pad=0.7, w_pad=0.1)  # h_pad affects vertical padding
-        fig.align_ylabels([ax1, ax5])
-        fig.align_ylabels([ax2, ax3, ax4])
-        # fig.text(0.5, 1, f"Model: {self.model_name}", fontsize=20, ha='center', va='top')
-        # fig.subplots_adjust(top=1)
-        fig.suptitle(f"Model: {self.model_name}", fontsize=20, y=1.07)
-        # fig.subplots_adjust(wspace=0.2, hspace=0.9)
-        # fig.tight_layout()
-
-        return fig
+    def add_colorbar(self, fig, ax, im):
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        cbar = fig.colorbar(im, cax=cax)
+        cbar.ax.yaxis.offsetText.set(size=10) 
+        cbar.ax.yaxis.offsetText.set_position((6, -5)) 
+        cbar.formatter.set_scientific(True)
+        cbar.formatter.set_powerlimits((0, 0))
+        cbar.update_ticks()
+        return cbar
