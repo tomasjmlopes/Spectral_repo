@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from matplotlib.colors import LogNorm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.kernel_ridge import KernelRidge
@@ -23,6 +24,7 @@ class NonlinearRegressionAnalysis:
     def __init__(self, X, y, patch_shape, test_size=0.2, random_state=42, scaler=None):
         self.X = X
         self.y = y
+
         self.patch_shape = patch_shape
         if scaler == None:
             self.scaler = NoScale()
@@ -36,6 +38,9 @@ class NonlinearRegressionAnalysis:
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             X_scaled, y, test_size=test_size, random_state=random_state, shuffle=True
         )
+
+        self.mape = None
+        self.mae = None
         self.model = None
         self.y_train_pred = None
         self.y_test_pred = None
@@ -43,6 +48,12 @@ class NonlinearRegressionAnalysis:
         self.custom_test_data = None
         self.custom_test_pred = None
         self.custom_patch_shape = None
+
+    def calculate_metrics(self, y_true, y_pred):
+        percentage_error = ((y_true - y_pred) / y_true) * 100
+        mape = np.abs(percentage_error).mean()
+        mae = np.abs(y_true - y_pred).mean()
+        return percentage_error, mape, mae
 
     def train_model(self, model_type='knn', **kwargs):
         if model_type == 'knn':
@@ -102,26 +113,17 @@ class NonlinearRegressionAnalysis:
 
     def plot_histogram(self, ax, data='original'):
         if data == 'original':
-            train_percentage_error = ((self.y_train - self.y_train_pred) / self.y_train)*100
-            test_percentage_error = ((self.y_test - self.y_test_pred) / self.y_test)*100
-
-            test_mape = (abs(self.y_test - self.y_test_pred) / self.y_test).mean() * 100
-            test_mae = np.abs(self.y_test - self.y_test_pred).mean()
-
-            ax.hist(test_percentage_error, bins=100, alpha=0.7, label="Test", range=(-400, 400), density=True)
-            ax.hist(train_percentage_error, bins=100, alpha=0.7, label="Train", range=(-400, 400), density=True)
+            train_percentage_error, _, _ = self.calculate_metrics(self.y_train, self.y_train_pred)
+            test_percentage_error, self.mape, self.mae = self.calculate_metrics(self.y_test, self.y_test_pred)
         elif data == 'custom' and self.custom_test_data is not None:
             _, y_test = self.custom_test_data
-            test_percentage_error = ((y_test - self.custom_test_pred) / y_test)*100
-            train_percentage_error = ((self.y_train - self.y_train_pred) / self.y_train)*100
-
-            test_mape = (abs(y_test - self.custom_test_pred) / y_test).mean() * 100
-            test_mae = np.abs(y_test - self.custom_test_pred).mean()
-
-            ax.hist(test_percentage_error, bins=100, alpha=0.7, label="Test", range=(-400, 400), density=True)
-            ax.hist(train_percentage_error, bins=100, alpha=0.7, label="Train", range=(-400, 400), density=True)
+            train_percentage_error, _, _ = self.calculate_metrics(self.y_train, self.y_train_pred)
+            test_percentage_error, self.mape, self.mae = self.calculate_metrics(y_test, self.custom_test_pred)
         else:
             raise ValueError("Invalid data type or custom test data not set")
+
+        ax.hist(test_percentage_error, bins=100, alpha=0.7, label="Test", range=(-400, 400), density=True)
+        ax.hist(train_percentage_error, bins=100, alpha=0.7, label="Train", range=(-400, 400), density=True)
 
         ax.set_title("Histogram of Percentage Errors", fontsize=14)
         ax.set_xlabel("Error (%)", fontsize=10)
@@ -130,7 +132,7 @@ class NonlinearRegressionAnalysis:
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         
-        textstr = f"MAPE: {test_mape:.2f}%\nMAE: {test_mae:.2f}"
+        textstr = f"MAPE: {self.mape:.2f}%\nMAE: {self.mae:.2f} ppm"
         ax.text(1, 0.4, textstr, transform=ax.transAxes, fontsize=10,
                 verticalalignment='top', horizontalalignment='right',
                 bbox=dict(boxstyle="round,pad=0.3", edgecolor='gray', facecolor='white'))
@@ -196,7 +198,7 @@ class NonlinearRegressionAnalysis:
         else:
             raise ValueError("Invalid data type or custom test data not set")
 
-        abs_error = (reconstruction - y_reshaped)
+        abs_error = reconstruction - y_reshaped
         im = ax.imshow(abs_error.T, cmap='Reds', aspect='equal', origin='lower')
         ax.set_title(f"Error", fontsize=16)
 
@@ -253,13 +255,15 @@ class NonlinearRegressionAnalysis:
         offsety.set_position((-0.3, 0.7))
         offsety.set_va('bottom')
 
-    def add_colorbar(self, fig, ax, im):
+    def add_colorbar(self, fig, ax, im, scientific = True):
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="5%", pad=0.05)
         cbar = fig.colorbar(im, cax=cax)
         cbar.ax.yaxis.offsetText.set(size=10) 
-        cbar.ax.yaxis.offsetText.set_position((6, -5)) 
-        cbar.formatter.set_scientific(True)
-        cbar.formatter.set_powerlimits((0, 0))
+        cbar.ax.yaxis.offsetText.set_position((6, -6)) 
+        if scientific:
+            cbar.formatter.set_scientific(True)
+            cbar.formatter.set_powerlimits((0, 0))
+        cbar_min, cbar_max = im.get_clim()
         cbar.update_ticks()
         return cbar
