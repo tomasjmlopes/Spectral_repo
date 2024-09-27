@@ -190,21 +190,11 @@ class AnalyticsToolkit:
                 - A list of the corresponding wavelengths.
                 If return_counts is True, returns a dictionary with element names as keys and the count of detected lines as values.
         """
-
+        spectral_cube = spectral_cube.reshape(-1, spectral_cube.shape[-1])
         if operation == 'average':
-            if len(spectral_cube.shape) == 3:
-                processed_spectrum = np.mean(spectral_cube, axis=(0, 1))
-            elif len(spectral_cube.shape) == 2:
-                processed_spectrum = np.mean(spectral_cube, axis=(0))
-            else:
-                raise ValueError("Invalid spectral cube shape")
+            processed_spectrum = np.mean(spectral_cube, axis=(0))
         elif operation == 'max':
-            if len(spectral_cube.shape) == 3:
-                processed_spectrum = np.max(spectral_cube, axis=(0, 1))
-            elif len(spectral_cube).shape == 2:
-                processed_spectrum = np.max(spectral_cube, axis=(0))
-            else:
-                raise ValueError("Invalid spectral cube shape")
+            processed_spectrum = np.max(spectral_cube, axis=(0))
         else:
             raise ValueError("Invalid operation. Choose 'average' or 'max'.")
 
