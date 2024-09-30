@@ -1,22 +1,21 @@
-import base64
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import plotly.graph_objects as go
 
-from io import BytesIO
 from matplotlib import gridspec
+from plotly.subplots import make_subplots
 
-
-def dash_periodic_table(element_counts: dict, figsize: tuple = (10, 5)):
+def dash_periodic_table(element_counts: dict, figsize: tuple = (1000, 500)):
     """
-    Plots a periodic table and for each element in element_counts, classifies
+    Plots a periodic table using Plotly and for each element in element_counts, classifies
     it as present (3 or more emission lines found), yellow (between 1 and 3 
     emission lines found), and red (no lines found).
     Returns:
-        str: Base64-encoded string of the periodic table image.
+        go.Figure: Plotly figure object of the periodic table.
     """
     
-    # Define groups and color mappings
+    # Define groups and color mappings (unchanged)
     element_groups = {
         'Alkali Metals': ['Li', 'Na', 'K', 'Rb', 'Cs', 'Fr'],
         'Alkaline Earth Metals': ['Be', 'Mg', 'Ca', 'Sr', 'Ba', 'Ra'],
@@ -36,88 +35,121 @@ def dash_periodic_table(element_counts: dict, figsize: tuple = (10, 5)):
     element_to_group = {element: group for group, elements in element_groups.items() for element in elements}
 
     group_colors = {
-        'Alkali Metals': 'xkcd:light aqua',
-        'Alkaline Earth Metals': 'xkcd:scarlet',
-        'Transition Metals': 'xkcd:muted purple',
-        'Post-Transition Metals': 'xkcd:viridian',
-        'Metalloids': 'xkcd:apricot',
-        'Reactive Non-Metals': 'xkcd:prussian blue',
-        'Noble Gases': 'xkcd:blood',
-        'Lanthanides': 'xkcd:azure',
-        'Actinides': 'xkcd:umber',
-        'Unknown Properties': 'xkcd:grey'
+        'Alkali Metals': 'rgb(173, 216, 230)',
+        'Alkaline Earth Metals': 'rgb(255, 36, 0)',
+        'Transition Metals': 'rgb(158, 67, 179)',
+        'Post-Transition Metals': 'rgb(64, 130, 109)',
+        'Metalloids': 'rgb(255, 204, 153)',
+        'Reactive Non-Metals': 'rgb(0, 49, 83)',
+        'Noble Gases': 'rgb(128, 0, 0)',
+        'Lanthanides': 'rgb(0, 127, 255)',
+        'Actinides': 'rgb(138, 51, 36)',
+        'Unknown Properties': 'rgb(128, 128, 128)'
     }
-
-    fig, ax = plt.subplots(figsize=figsize)
 
     # Define the periodic table layout
     periodic_table = [
-        ['H', '', '','', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'He'],
-        ['Li', 'Be', '','', '', '', '', '', '', '', '', '', '', 'B', 'C', 'N', 'O', 'F', 'Ne'],
-        ['Na', 'Mg', '','', '', '', '', '', '', '', '', '', '', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar'],
-        ['K', 'Ca', 'Sc','', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr'],
-        ['Rb', 'Sr', 'Y','', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe'],
-        ['Cs', 'Ba', 'La','', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn'],
-        ['Fr', 'Ra', 'Ac','', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg', 'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og'],
-        ['', '', '', '','', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-        ['', '', '','Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', ''],
-        ['', '', '','Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr', '']
+    ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],  # Empty row at the top
+    ['H', '', '','', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'He'],
+    ['Li', 'Be', '','', '', '', '', '', '', '', '', '', '', 'B', 'C', 'N', 'O', 'F', 'Ne'],
+    ['Na', 'Mg', '','', '', '', '', '', '', '', '', '', '', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar'],
+    ['K', 'Ca', 'Sc','', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr'],
+    ['Rb', 'Sr', 'Y','', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe'],
+    ['Cs', 'Ba', 'La','', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn'],
+    ['Fr', 'Ra', 'Ac','', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg', 'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og'],
+    ['', '', '', '','', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    ['', '', '','Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', '', ''],
+    ['', '', '','Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr', '', '']
     ]
 
-    # Create the table plot
+    fig = make_subplots(rows=1, cols=1)
+
+    # Function to create a rounded rectangle path
+    def rounded_rect(x, y, w, h, r):
+        return f' M {x+r},{y} L {x+w-r},{y} Q {x+w},{y} {x+w},{y+r} L {x+w},{y+h-r} Q {x+w},{y+h} {x+w-r},{y+h} L {x+r},{y+h} Q {x},{y+h} {x},{y+h-r} L {x},{y+r} Q {x},{y} {x+r},{y} Z'
+
+    shapes = []
+    annotations = []
+
     for i, row in enumerate(periodic_table):
         for j, element in enumerate(row):
-            if element: 
-                count = element_counts.get(element, None)
+            if element:
+                count = element_counts.get(element)
                 group = element_to_group.get(element, 'Unknown')
+                # print(element, count, group)
 
                 if count is not None:
                     if count >= 3:
-                        color = '#98FB98' 
-                        fontcolor = 'xkcd:dark sage'
+                        color = 'rgba(152, 251, 152, 1)'  # Light green
+                        fontcolor = 'rgb(0, 100, 0)'  # Dark sage
                     elif 0 < count < 3:
-                        color = '#FFFFE0'  
-                        fontcolor = 'xkcd:dark yellow'
+                        color = 'rgba(255, 255, 224, 1)'  # Light yellow
+                        fontcolor = 'rgb(184, 134, 11)'  # Dark yellow
                     else:
-                        color = '#FFC0CB'  
-                        fontcolor = 'xkcd:burnt red'
+                        color = 'rgba(255, 192, 203, 1)'  # Light pink
+                        fontcolor = 'rgb(139, 0, 0)'  # Dark red
+                    opacity = 1
                     fontweight = 'bold'
-                    alpha = 1.0  
                 else:
-                    color = group_colors.get(group, '#F5F5DC')  
-                    fontweight = 'normal'
+                    color = group_colors.get(group, 'rgb(245, 245, 220)')  # Beige for unknown
                     fontcolor = 'black'
-                    alpha = 0.15 
+                    opacity = 0.15
+                    fontweight = 'normal'
 
-                fancy_box = patches.FancyBboxPatch(
-                    (j + 0.05, -i + 0.05), 0.9, 0.9, 
-                    boxstyle="round,pad=0.02", 
-                    edgecolor='black', 
-                    facecolor=color, 
-                    alpha=alpha
+                # Add element box with rounded corners and spacing
+                x, y = j + 0.05, -i - 0.95
+                w, h = 0.9, 0.9
+                r = 0.1  # Corner radius
+                path = rounded_rect(x, y, w, h, r)
+
+                shapes.append(
+                    dict(
+                        type='path',
+                        path=path,
+                        fillcolor=color,
+                        line=dict(color='black', width=1),
+                        opacity=opacity,
+                        xref='x',
+                        yref='y'
+                    )
                 )
 
-                ax.add_patch(fancy_box)
-                ax.text(j + 0.5, -i + 0.5, element, ha='center', va='center', fontsize=12, 
-                        weight=fontweight, color=fontcolor, alpha=alpha)
+                # Add element text
+                annotations.append(
+                    dict(
+                        x=j+0.5,
+                        y=-i-0.5,
+                        text=element,
+                        showarrow=False,
+                        font=dict(
+                            family="Arial, sans-serif",
+                            size=12,
+                            color=fontcolor,
+                            weight=fontweight
+                        ),
+                        opacity=opacity, 
+                        align="center",
+                        xref='x',
+                        yref='y'
+                    )
+                )
 
-    ax.set_xlim(0, 20) 
-    ax.set_ylim(-10, 1)
-    ax.set_aspect('equal')
-    ax.axis('off') 
-    fig.tight_layout()
+    fig.update_layout(
+        width=figsize[0],
+        height=figsize[1],
+        showlegend=False,
+        plot_bgcolor='rgba(0,0,0,0)',
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        shapes=shapes,
+        annotations=annotations
+    )
 
-    # Save image to in-memory buffer
-    buf = BytesIO()
-    fig.savefig(buf, format="png", transparent=True, dpi=300)
-    buf.seek(0)
+    # Adjust the axis ranges to fit the entire table, with extra space for Hydrogen
+    fig.update_xaxes(range=[10, 10])  # Adding more space to the left for Hydrogen
+    fig.update_yaxes(range=[-11, -1], scaleanchor="x", scaleratio=1)  # Adding more space at the top
 
-    # Convert buffer to base64 string
-    img_base64 = base64.b64encode(buf.read()).decode("utf-8")
-    buf.close()
-
-    plt.close(fig)  # Close figure to free memory
-    return img_base64
+    return fig
 
 def wavelength_to_index(WoI: float, wavelengths: np.ndarray) -> int:
         """

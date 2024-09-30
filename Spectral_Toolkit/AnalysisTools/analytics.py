@@ -166,10 +166,12 @@ class AnalyticsToolkit:
         return identified_elements
 
 
-    def identify_from_elements(self, spectral_cube, wavelengths, operation: str = 'average', prominence: Union[float, str] = 'auto', 
-                               distance: int = 5, tolerance: float = 0.2, min_intensity: float = 0.5, return_counts: bool = False) -> Dict[str, Union[int, Tuple[int, List[float]]]]:
+    def identify_from_elements(self, spectral_cube, wavelengths, operation: str = 'average', 
+                           prominence: Union[float, str] = 'auto', distance: int = 5, 
+                           tolerance: float = 0.2, min_intensity: float = 0.5, 
+                           return_counts: bool = False) -> Dict[str, Union[int, Tuple[int, List[float]]]]:
         """
-        Analyze the dataset to find peaks and map them to elements in the emission database.
+        Optimized function to analyze the dataset to find peaks and map them to elements in the emission database.
 
         Args:
             spectral_cube (ndarray): The spectral data cube with shape (x, y, wavelength).
@@ -190,44 +192,50 @@ class AnalyticsToolkit:
                 - A list of the corresponding wavelengths.
                 If return_counts is True, returns a dictionary with element names as keys and the count of detected lines as values.
         """
+        
+        # Flatten spectral_cube if necessary (avoid reshaping if possible)
         spectral_cube = spectral_cube.reshape(-1, spectral_cube.shape[-1])
+        
+        # Compute processed spectrum based on the operation
         if operation == 'average':
-            processed_spectrum = np.mean(spectral_cube, axis=(0))
+            processed_spectrum = np.mean(spectral_cube, axis=0)
         elif operation == 'max':
-            processed_spectrum = np.max(spectral_cube, axis=(0))
+            processed_spectrum = np.max(spectral_cube, axis=0)
         else:
             raise ValueError("Invalid operation. Choose 'average' or 'max'.")
 
+        # Optimize prominence calculation by precomputing if 'auto'
         if prominence == 'auto':
             prominence = np.mean(processed_spectrum) + np.std(processed_spectrum)
 
+        # Peak detection
         peaks, _ = find_peaks(processed_spectrum, prominence=prominence, distance=distance)
         peak_wavelengths = wavelengths[peaks]
 
-        emission_database = self.process_database(lower_limit= self.lower_limit, 
-                                                  upper_limit = self.upper_limit,
-                                                  min_intensity=min_intensity)
-        element_data = {element_entry[0]: (0, []) for element_entry in emission_database}
+        # Process the emission database once
+        emission_database = self.process_database(lower_limit=self.lower_limit, 
+                                                upper_limit=self.upper_limit, 
+                                                min_intensity=min_intensity)
+        
+        # Prepare a more efficient structure for wavelength lookup
+        element_wavelengths = np.array([entry[2] for entry in emission_database])
+        element_names = [entry[0] for entry in emission_database]
+        element_data = {element: (0, []) for element in element_names}
 
+        # Optimize peak matching using vectorized operations
         for peak_wavelength in peak_wavelengths:
-            closest_match = None
-            min_difference = float('inf')
-
-            for element_entry in emission_database:
-                element, _, line_wavelength, _, _ = element_entry
-                difference = abs(peak_wavelength - line_wavelength)
-                
-                if difference < tolerance and difference < min_difference:
-                    closest_match = element
-                    min_difference = difference
-            
-            if closest_match:
+            differences = np.abs(element_wavelengths - peak_wavelength)
+            min_idx = np.argmin(differences)
+            if differences[min_idx] < tolerance:
+                closest_match = element_names[min_idx]
                 count, wavelength_list = element_data[closest_match]
+                # Update the tuple in element_data after modifying
                 element_data[closest_match] = (count + 1, wavelength_list + [peak_wavelength])
 
+        # Return result based on return_counts flag
         if return_counts:
             return {element: count for element, (count, _) in element_data.items()}
-
+        
         return {element: (count, wavelength_list) for element, (count, wavelength_list) in element_data.items()}
     
     def identify_on_cluster(self, cluster_number: int, spectral_cube, *args, **kwargs):
