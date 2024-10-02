@@ -93,7 +93,7 @@ def dash_periodic_table(element_counts: dict, figsize: tuple = (1000, 500)):
                 else:
                     color = group_colors.get(group, 'rgb(245, 245, 220)')  # Beige for unknown
                     fontcolor = 'black'
-                    opacity = 0.15
+                    opacity = 0.3
                     fontweight = 'normal'
 
                 # Add element box with rounded corners and spacing

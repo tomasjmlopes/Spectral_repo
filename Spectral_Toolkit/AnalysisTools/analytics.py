@@ -166,17 +166,17 @@ class AnalyticsToolkit:
         return identified_elements
 
 
-    def identify_from_elements(self, spectral_cube, wavelengths, operation: str = 'average', 
+    def identify_from_elements(self, spectrum_or_cube, wavelengths, operation: str = 'average', 
                            prominence: Union[float, str] = 'auto', distance: int = 5, 
                            tolerance: float = 0.2, min_intensity: float = 0.5, 
                            return_counts: bool = False) -> Dict[str, Union[int, Tuple[int, List[float]]]]:
         """
-        Optimized function to analyze the dataset to find peaks and map them to elements in the emission database.
+        Optimized function to analyze the dataset or spectrum to find peaks and map them to elements in the emission database.
 
         Args:
-            spectral_cube (ndarray): The spectral data cube with shape (x, y, wavelength).
+            spectrum_or_cube (ndarray): The spectral data cube with shape (x, y, wavelength) or a 1D spectrum array.
             wavelengths (ndarray): Array of corresponding wavelengths.
-            operation (str): Operation to perform across the (x, y) spatial dimensions. 
+            operation (str): Operation to perform across the (x, y) spatial dimensions if a spectral cube is provided. 
                             Should be 'average' or 'max'.
             prominence (Union[float, str]): The prominence required for peak detection. 
                                             If 'auto', it will be set based on the data.
@@ -193,17 +193,18 @@ class AnalyticsToolkit:
                 If return_counts is True, returns a dictionary with element names as keys and the count of detected lines as values.
         """
         
-        # Flatten spectral_cube if necessary (avoid reshaping if possible)
-        spectral_cube = spectral_cube.reshape(-1, spectral_cube.shape[-1])
-        
-        # Compute processed spectrum based on the operation
-        if operation == 'average':
-            processed_spectrum = np.mean(spectral_cube, axis=0)
-        elif operation == 'max':
-            processed_spectrum = np.max(spectral_cube, axis=0)
+        # If it's a spectral cube, apply the operation to reduce it to a 1D spectrum
+        if spectrum_or_cube.ndim == 3:
+            if operation == 'average':
+                processed_spectrum = np.mean(spectrum_or_cube, axis=(0, 1))
+            elif operation == 'max':
+                processed_spectrum = np.max(spectrum_or_cube, axis=(0, 1))
+            else:
+                raise ValueError("Invalid operation. Choose 'average' or 'max'.")
         else:
-            raise ValueError("Invalid operation. Choose 'average' or 'max'.")
-
+            # If it's already a 1D spectrum, use it directly
+            processed_spectrum = spectrum_or_cube
+        
         # Optimize prominence calculation by precomputing if 'auto'
         if prominence == 'auto':
             prominence = np.mean(processed_spectrum) + np.std(processed_spectrum)

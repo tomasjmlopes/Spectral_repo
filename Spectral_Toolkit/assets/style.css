@@ -1,30 +1,168 @@
 body {
     background-color: #708090;
+    height: 100vh;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
 }
 
-.Dashboard-container {
+.dashboard-container {
     width: 1400px;
     height: 800px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 50px;
-    margin-bottom: 50px;
-    background-color: #010103;
+    background-color: #4c4c4c;
+    border: 1px solid #cccccc;
+    border-radius: 10px;
+    padding: 35px;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.title-section {
+    height: 35%;
+    width: 100%;
+    padding: 0;
+    font-family: "Arial";
+    color: #cccccc;
+    display: flex;
+    flex-direction: column;
+}
+
+.radio-section {
+    height: 15%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+}
+
+.btn-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 90%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Style the form-check divs */
+.btn-group .form-check {
+    flex: 1;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+/* Hide the actual radio input */
+.form-check-input {
+    display: none;
+}
+
+/* Style the labels */
+.form-check-label.btn {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    margin: 0;
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Remove any Bootstrap margins */
+.btn-group>.form-check:not(:last-child),
+.btn-group>.form-check:not(:first-child) {
+    margin: 0;
+}
+
+.plot-section1 {
+    width: 100%;
+    height: 50%;
+    display: flex;
+    overflow: hidden;
+    justify-content: center;
+    align-items: center;
+}
+
+#imshow-plot {
+    width: 100%;
+    height: 100%;
+    display: flex;
+}
+
+.plot-section2 {
+    width: 100%;
+    height: 50%;
+    display: flex;
+    overflow: hidden;
+    justify-content: center;
+    align-items: center;
+}
+
+.section2-plot {
+    width: 60%;
+    height: 100%;
+    display: flex;
+    overflow: hidden;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.section2-imshow {
+    width: 40%;
+    height: 100%;
+    display: flex;
+    overflow: hidden;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.plot-section3 {
+    width: 100%;
+    height: 50%;
+    display: flex;
+    overflow: hidden;
+    justify-content: center;
+    align-items: center;
+}
+
+#periodic-table {
+    width: 100%;
+    height: 100%;
+    display: flex;
+}
+
+.right-panel {
+    width: 70%;
+    height: 100%;
+    overflow: hidden;
+    justify-content: center;
+    align-items: center;
+    background-color: #595959;
     border: 1px solid #cccccc;
     border-radius: 10px;
 }
 
-h1 {
-    font-family: "Tahoma"; 
-    color: #ffffff; 
-    font-size: 35px;
-    margin: 15px;
-}
-
-p {
-    font-family: "Tahoma";
-    color: #ffffff;
-    font-size: 16px;
-    margin: 15px;
-    text-align: justify;
+.left-panel {
+    width: 30%;
+    height: 100%;
+    overflow: hidden;
+    justify-content: center;
+    align-items: center;
 }
