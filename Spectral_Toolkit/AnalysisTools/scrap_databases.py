@@ -85,7 +85,7 @@ def read_ion_properties(element_label):
     
     #gather data
     #read data from database
-    filename = 'AnalysisTools/Databases/element_data/ion_Data.csv'
+    filename = 'AnalysisTools/Databases/element_data/ion_data.csv'
     df = pd.read_csv(filename,delimiter = ';')
     at_mass = float(df[df['Element']==element_label]['Mass'].iloc[0])
     element_row = df.loc[df['Element']==element_label]
