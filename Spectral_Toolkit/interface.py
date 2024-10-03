@@ -3,6 +3,7 @@ from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 
 import dash
+import os
 import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
@@ -64,7 +65,7 @@ class SpectralDashboard:
         self._setup_callbacks()
 
     def _initialize_data(self):
-        data_handler = LibsLoader(r"E:/Data/Data_LIBS/ForHolo/wrench_map")
+        data_handler = LibsLoader(r"F:/Data/Data_LIBS/ForHolo/wrench_map")
         data_handler.load_dataset(baseline_corrected=True)
         data_handler.normalize_to_sum()
         return data_handler
@@ -425,5 +426,6 @@ class SpectralDashboard:
         self.app.run_server(debug=debug)
 
 print("Starting...")
+print(f"Directory: {os.getcwd()}")
 dashboard = SpectralDashboard()
 dashboard.run(debug=True)
