@@ -65,7 +65,7 @@ class SpectralDashboard:
         self._setup_callbacks()
 
     def _initialize_data(self):
-        data_handler = LibsLoader(r"F:/Data/Data_LIBS/ForHolo/wrench_map")
+        data_handler = LibsLoader(r"E:/Data/Data_LIBS/ForHolo/wrench_map")
         data_handler.load_dataset(baseline_corrected=True)
         data_handler.normalize_to_sum()
         return data_handler
@@ -130,6 +130,9 @@ class SpectralDashboard:
                 updated_periodic_table = dash_periodic_table(
                     self.region_counts[selected_region],
                     figsize=(900, 350)
+                )
+                updated_periodic_table.update_layout(
+                    margin=dict(l=25, r=25, t=25, b=25)
                 )
             else:
                 updated_periodic_table = self.figures['periodic_table']
@@ -262,8 +265,6 @@ class SpectralDashboard:
 
         fig = dash_periodic_table(counts, figsize=(900, 350))
         fig.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
             margin=dict(l=25, r=25, t=25, b=25)
         )
         return fig
